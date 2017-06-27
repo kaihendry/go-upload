@@ -13,6 +13,10 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseMultipartForm(32 << 20) // Not quite sure what this should be
 
+	r.ParseForm()
+
+	fmt.Println("GEO:", r.Form["geo"])
+
 	file, handler, err := r.FormFile("movie")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -64,6 +68,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 <form action="/upload" enctype="multipart/form-data" method="post">
 <input type="file" name="movie" />
+<input name="geo" />
 <input type="submit" value="Send" />
 </form>
 
