@@ -15,9 +15,10 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 
-	fmt.Println("GEO:", r.Form["geo"])
+	fmt.Println("Lat:", r.Form["lat"])
+	fmt.Println("Lng:", r.Form["lng"])
 
-	file, handler, err := r.FormFile("movie")
+	file, _, err := r.FormFile("jpeg")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -38,8 +39,8 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(handler)
-	fmt.Printf("Upload writen to %v\n", f.Name())
+	// log.Println(handler)
+	fmt.Printf("Upload written to %v\n", f.Name())
 	w.Write([]byte("OK"))
 }
 
@@ -66,11 +67,66 @@ func index(w http.ResponseWriter, r *http.Request) {
 </head>
 <body>
 
+
+<div id="test1">
+
 <form action="/upload" enctype="multipart/form-data" method="post">
-<input type="file" name="movie" />
-<input name="geo" />
-<input type="submit" value="Send" />
+<input type="file" required name="jpeg" />
+<br>
+<label>Lat: <input type="number" step="any" name=lat required v-model.number.lazy="mapCenter.lat" /></label>
+<label>Lng: <input type="number" step="any" name=lng required v-model.number.lazy="mapCenter.lng" /></label>
+<input type="submit" value="Report" />
 </form>
+
+<gmap-map style="width: 500px; height: 500px" :center="mapCenter" :zoom="12"
+  @center_changed="updateCenter"
+  class="map-container">
+</gmap-map>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.0/vue.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.16.4/lodash.js"></script>
+<script src="https://s.natalian.org/2017-06-28/vue-google-maps.js"></script>
+
+  <script>
+    Vue.use(VueGoogleMaps, {
+      load: {
+        key: 'AIzaSyD4VHBovJ2dnHSZpS-Y46hheA_JL6mtwZI',
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      new Vue({
+        el: '#test1',
+        data: {
+          mapCenter: {
+            lat: 1.38,
+            lng: 103.8,
+          }
+		},
+		created: function () {
+			console.log('a is: ' + this.mapCenter)
+			if(navigator.geolocation) {
+				navigator.geolocation.getCurrentPosition((position) => {
+					console.log(position.coords.latitude, position.coords.longitude)
+					this.mapCenter.lat = position.coords.latitude
+					this.mapCenter.lng = position.coords.longitude
+				})
+			}
+		},
+        methods: {
+          updateCenter(newCenter) {
+            this.mapCenter = {
+              lat: newCenter.lat(),
+              lng: newCenter.lng(),
+            }
+          }
+        }
+      });
+    });
+  </script>
+
 
 </body>
 </html>`)
