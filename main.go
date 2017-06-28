@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/tajtiattila/metadata/exif"
 )
 
 func upload(w http.ResponseWriter, r *http.Request) {
@@ -17,6 +19,16 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Lat:", r.Form["lat"])
 	fmt.Println("Lng:", r.Form["lng"])
+	lat, err := strconv.ParseFloat(r.Form["lat"][0], 64)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	lng, err := strconv.ParseFloat(r.Form["lng"][0], 64)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 
 	file, _, err := r.FormFile("jpeg")
 	if err != nil {
@@ -25,21 +37,36 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	x, err := exif.Decode(file)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	x.SetLatLong(lat, lng)
+
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
 	f, err := ioutil.TempFile("", "upload")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	if _, err := io.Copy(f, file); err != nil {
+
+	if err := exif.Copy(f, file, x); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+
 	if err := f.Close(); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	// log.Println(handler)
 	fmt.Printf("Upload written to %v\n", f.Name())
 	w.Write([]byte("OK"))
 }
