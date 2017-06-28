@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/pkg/profile"
 )
 
 func upload(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +42,8 @@ func upload(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	defer profile.Start().Stop()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index)
