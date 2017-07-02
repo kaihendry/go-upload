@@ -5,12 +5,21 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 
+	"github.com/apex/go-apex"
+	"github.com/apex/go-apex/proxy"
 	"github.com/tajtiattila/metadata/exif"
 )
 
 func upload(w http.ResponseWriter, r *http.Request) {
+
+	requestDump, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println(string(requestDump))
 
 	r.ParseMultipartForm(32 << 20) // Not quite sure what this should be
 
@@ -94,13 +103,14 @@ func main() {
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/upload", upload)
 
-	log.Println("Listening on :3001")
-	err := http.ListenAndServe(":3001", mux)
-	log.Fatal(err)
+	proxy.SetTextContentTypes([]string{`text/html`, `image/jpeg`, `text/plain`})
+	apex.Handle(proxy.Serve(mux))
 
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "text/html")
 
 	t, err := template.New("foo").Parse(`<!DOCTYPE html>
 <html>
