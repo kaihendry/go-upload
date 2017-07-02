@@ -66,12 +66,6 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// f, err := ioutil.TempFile("", "upload")
-	// if err != nil {
-	// 	http.Error(w, err.Error(), 500)
-	// 	return
-	// }
-
 	w.Header().Add("Content-Type", "image/jpeg")
 
 	if err := exif.Copy(w, file, x); err != nil {
@@ -79,13 +73,6 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if err := f.Close(); err != nil {
-	// 	http.Error(w, err.Error(), 500)
-	// 	return
-	// }
-
-	// fmt.Printf("Upload written to %v\n", f.Name())
-	// w.Write([]byte("OK"))
 }
 
 func main() {
