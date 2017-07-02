@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -37,6 +36,22 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	buff := make([]byte, 512)
+	_, err = file.Read(buff)
+	filetype := http.DetectContentType(buff)
+	fmt.Println(filetype)
+
+	if filetype != "image/jpeg" {
+		http.Error(w, "Upload not a JPEG", 400)
+		return
+	}
+
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
 	x, err := exif.Decode(file)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -51,24 +66,26 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := ioutil.TempFile("", "upload")
-	if err != nil {
+	// f, err := ioutil.TempFile("", "upload")
+	// if err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
+
+	w.Header().Add("Content-Type", "image/jpeg")
+
+	if err := exif.Copy(w, file, x); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	if err := exif.Copy(f, file, x); err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
+	// if err := f.Close(); err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
 
-	if err := f.Close(); err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	fmt.Printf("Upload written to %v\n", f.Name())
-	w.Write([]byte("OK"))
+	// fmt.Printf("Upload written to %v\n", f.Name())
+	// w.Write([]byte("OK"))
 }
 
 func main() {
