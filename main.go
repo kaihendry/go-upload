@@ -158,7 +158,7 @@ func index(w http.ResponseWriter, r *http.Request) {
     });
   </script>
 
-
+<p><a href="https://github.com/kaihendry/go-upload/tree/lgeo">Source code</a></p>
 </body>
 </html>`)
 	if err != nil {
