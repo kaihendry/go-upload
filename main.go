@@ -3,12 +3,10 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/tajtiattila/metadata/exif"
+	"os"
 )
 
 func upload(w http.ResponseWriter, r *http.Request) {
@@ -19,55 +17,47 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Lat:", r.Form["lat"])
 	fmt.Println("Lng:", r.Form["lng"])
-	lat, err := strconv.ParseFloat(r.Form["lat"][0], 64)
+	// lat, err := strconv.ParseFloat(r.Form["lat"][0], 64)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
+	//lng, err := strconv.ParseFloat(r.Form["lng"][0], 64)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
+
+	input, h, err := r.FormFile("jpeg")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	lng, err := strconv.ParseFloat(r.Form["lng"][0], 64)
-	if err != nil {
+	defer input.Close()
+
+	// buff := make([]byte, 512)
+	// _, err = input.Read(buff)
+	// filetype := http.DetectContentType(buff)
+	// fmt.Println(filetype)
+
+	// input.Seek(0)
+
+	filename := "/tmp/" + h.Filename
+	out, _ := os.Create(filename)
+
+	io.Copy(out, input)
+
+	if _, err := io.Copy(out, input); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	file, _, err := r.FormFile("jpeg")
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	defer file.Close()
-
-	x, err := exif.Decode(file)
-	if err != nil {
+	if err := out.Close(); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	x.SetLatLong(lat, lng)
-
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	f, err := ioutil.TempFile("", "upload")
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	if err := exif.Copy(f, file, x); err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	if err := f.Close(); err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	fmt.Printf("Upload written to %v\n", f.Name())
+	fmt.Printf("Upload written to %v\n", out.Name())
 	w.Write([]byte("OK"))
 }
 
